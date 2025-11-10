@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Maharaja College</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .debug-panel {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: #34495e;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+        
+        .test-panel {
+            position: fixed;
+            bottom: 80px;
+            right: 10px;
+            background: #2c3e50;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000;
+        }
+        
+        @media (max-width: 768px) {
+            .auth-card {
+                margin: 10px;
+                padding: 20px;
+            }
+            .debug-panel, .test-panel {
+                display: none; /* Hide debug on mobile */
+            }
+        }
+    </style>
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="college-branding">
+                    <h1>🏛️ Maharaja College</h1>
+                    <h2>BCA Semester 3 Portal</h2>
+                </div>
+                <p>Login to your account</p>
+                <div class="login-info">
+                    <p><strong>Login:</strong> Use your <strong>Name</strong> and <strong>DOB as Password</strong> (YYYYMMDD format)</p>
+                </div>
+            </div>
+
+            <div id="loadingIndicator" style="display: none; text-align: center; padding: 20px;">
+                <div style="font-size: 48px; margin-bottom: 10px;">⏳</div>
+                <p>Logging in...</p>
+            </div>
+
+            <div id="errorMessage" style="display: none; background: #f8d7da; color: #721c24; padding: 12px; border-radius: 8px; margin: 15px 0; border: 1px solid #f5c6cb;"></div>
+
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="email">👤 Name or Email</label>
+                    <input type="text" id="email" required placeholder="Enter your full name">
+                </div>
+                <div class="form-group">
+                    <label for="password">🔑 Password</label>
+                    <input type="password" id="password" required placeholder="Enter password">
+                    <small class="password-hint">Students/Teachers: Use DOB (YYYYMMDD) | Admin: 123456</small>
+                </div>
+                <div class="form-group">
+                    <label for="userType">🎯 Login as</label>
+                    <select id="userType" required>
+                        <option value="student">🎓 Student</option>
+                        <option value="teacher">👨‍🏫 Teacher</option>
+                        <option value="admin">👑 Admin</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">🚀 Login</button>
+                
+                <!-- Quick Login Buttons -->
+                <div class="quick-login-buttons" style="text-align: center; margin: 20px 0;">
+                    <button type="button" onclick="quickLogin('student')" class="btn btn-success" style="margin: 5px; padding: 10px 15px;">
+                        🎓 Quick Student
+                    </button>
+                    <button type="button" onclick="quickLogin('teacher')" class="btn btn-primary" style="margin: 5px; padding: 10px 15px;">
+                        👨‍🏫 Quick Teacher
+                    </button>
+                </div>
+
+                <p class="auth-link">Need an account? <a href="javascript:void(0)" onclick="showSignupInfo()">Contact Administrator</a></p>
+                
+                <div class="demo-accounts">
+                    <h4>Demo Accounts:</h4>
+                    <div class="demo-account">
+                        <strong>Student:</strong> "Rahul Sharma" | "20020515"
+                    </div>
+                    <div class="demo-account">
+                        <strong>Teacher:</strong> "Dr. Sunita Verma" | "19750815" 
+                    </div>
+                    <div class="demo-account">
+                        <strong>Admin:</strong> "Admin User" | "123456"
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Debug Panel -->
+    <div class="debug-panel">
+        <button onclick="DataHandler.debugData()" style="background: #e74c3c; color: white; border: none; padding: 5px; border-radius: 3px; cursor: pointer; margin: 2px;">
+            🔧 Debug Data
+        </button>
+        <button onclick="verifyUsers()" style="background: #3498db; color: white; border: none; padding: 5px; border-radius: 3px; cursor: pointer; margin: 2px;">
+            👥 Check Users
+        </button>
+    </div>
+
+    <!-- Test Panel -->
+    <div class="test-panel">
+        <button onclick="testLogin()" style="background: #27ae60; color: white; border: none; padding: 5px 10px; margin: 2px; border-radius: 3px; cursor: pointer;">
+            🧪 Test Login
+        </button>
+        <button onclick="resetData()" style="background: #e67e22; color: white; border: none; padding: 5px 10px; margin: 2px; border-radius: 3px; cursor: pointer;">
+            🔄 Reset Data
+        </button>
+    </div>
+
+    <script src="js/dataHandler.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        // Enhanced initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Page loaded, initializing system...');
+            DataHandler.init();
+            ensureDemoUsers();
+            initHiddenAdmin();
+            prefillDemoCredentials();
+            
+            // Verify users after initialization
+            setTimeout(() => {
+                const userData = verifyUsers();
+                console.log('✅ User verification complete:', userData);
+            }, 1000);
+        });
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+            document.getElementById('loginForm').style.display = show ? 'none' : 'block';
+        }
+
+        // FORCE CREATE ALL REQUIRED USERS
+        function ensureDemoUsers() {
+            const users = DataHandler.getUsers();
+            const requiredUsers = [
+                {
+                    id: '1',
+                    name: 'Rahul Sharma',
+                    email: 'rahul@maharajacollege.ac.in',
+                    type: 'student',
+                    rollNumber: 'BCA23001',
+                    semester: '3',
+                    course: 'BCA',
+                    dob: '2002-05-15'
+                },
+                {
+                    id: '2',
+                    name: 'Dr. Sunita Verma',
+                    email: 'sunita@maharajacollege.ac.in',
+                    type: 'teacher',
+                    department: 'Computer Science',
+                    dob: '1975-08-15'
+                },
+                {
+                    id: '3', 
+                    name: 'Admin User',
+                    email: 'admin@maharajacollege.ac.in',
+                    type: 'admin'
+                },
+                {
+                    id: '4',
+                    name: 'Demo Student',
+                    email: 'demo@maharajacollege.ac.in', 
+                    type: 'student',
+                    rollNumber: 'BCA23000',
+                    semester: '3',
+                    course: 'BCA',
+                    dob: '2000-01-01'
+                },
+                {
+                    id: '5',
+                    name: 'Anurag Singh',
+                    email: 'anurag@maharajacollege.ac.in',
+                    type: 'student', 
+                    rollNumber: 'BCA23002',
+                    semester: '3',
+                    course: 'BCA',
+                    dob: '2002-03-15'
+                }
+            ];
+            
+            let createdCount = 0;
+            requiredUsers.forEach(requiredUser => {
+                const exists = users.some(u => u.name === requiredUser.name && u.type === requiredUser.type);
+                if (!exists) {
+                    console.log(`➕ Creating user: ${requiredUser.name}`);
+                    DataHandler.addUser(requiredUser);
+                    createdCount++;
+                }
+            });
+            
+            if (createdCount > 0) {
+                console.log(`✅ Created ${createdCount} demo users`);
+            }
+        }
+
+        // Quick Login Functions
+        function quickLogin(type) {
+            console.log('🚀 Quick login as:', type);
+            
+            const users = DataHandler.getUsers();
+            let user;
+            
+            switch(type) {
+                case 'student':
+                    user = users.find(u => u.type === 'student');
+                    if (!user) {
+                        showError('No student found. Creating demo student...');
+                        user = {
+                            id: 'quick-student',
+                            name: 'Quick Student',
+                            email: 'quick@maharajacollege.ac.in',
+                            type: 'student',
+                            rollNumber: 'BCA23999',
+                            semester: '3',
+                            course: 'BCA',
+                            dob: '2000-01-01'
+                        };
+                        DataHandler.addUser(user);
+                    }
+                    break;
+                case 'teacher':
+                    user = users.find(u => u.type === 'teacher');
+                    if (!user) {
+                        showError('No teacher found. Creating demo teacher...');
+                        user = {
+                            id: 'quick-teacher',
+                            name: 'Quick Teacher',
+                            email: 'quickteach@maharajacollege.ac.in',
+                            type: 'teacher',
+                            department: 'Computer Science',
+                            dob: '1980-01-01'
+                        };
+                        DataHandler.addUser(user);
+                    }
+                    break;
+            }
+            
+            if (user) {
+                console.log('✅ Quick login user:', user.name);
+                DataHandler.setCurrentUser(user);
+                redirectUser(user.type);
+            } else {
+                showError('No user found for quick login');
+            }
+        }
+
+        function redirectUser(type) {
+            switch(type) {
+                case 'student': 
+                    window.location.href = 'studentDashboard.html'; 
+                    break;
+                case 'teacher': 
+                    window.location.href = 'teacherDashboard.html'; 
+                    break;
+                case 'admin': 
+                    window.location.href = 'admin.html'; 
+                    break;
+                default: 
+                    window.location.href = 'index.html';
+            }
+        }
+
+        // Enhanced Form Login with Better Error Handling
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const userType = document.getElementById('userType').value;
+
+            if (!email || !password) {
+                showError('Please fill in all fields');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                console.log('🔄 Attempting login with:', { email, userType });
+                
+                let user;
+                try {
+                    user = Auth.login(email, password, userType);
+                } catch (authError) {
+                    console.log('Auth failed, trying alternative method...');
+                    
+                    // METHOD 2: Try simple name-based login for demo users
+                    const demoUsers = {
+                        'student': ['Rahul Sharma', 'Demo Student', 'Anurag Singh', 'Quick Student'],
+                        'teacher': ['Dr. Sunita Verma', 'Quick Teacher'],
+                        'admin': ['Admin User']
+                    };
+                    
+                    const isDemoUser = demoUsers[userType]?.some(demoName => 
+                        demoName.toLowerCase().includes(email.toLowerCase()) || 
+                        email.toLowerCase().includes(demoName.toLowerCase())
+                    );
+                    
+                    if (isDemoUser) {
+                        console.log('Demo user detected, using simple login...');
+                        user = Auth.simpleLogin(email, userType);
+                        
+                        // For demo users, accept any password or check common ones
+                        const validPasswords = ['123456', 'password', 'demo', '12345678'];
+                        if (!validPasswords.includes(password) && user.dob) {
+                            const dobPassword = user.dob.replace(/-/g, '');
+                            if (password !== dobPassword) {
+                                throw new Error(`Demo login: Try password "123456" or DOB "${dobPassword}"`);
+                            }
+                        }
+                    } else {
+                        throw authError; // Re-throw original error
+                    }
+                }
+                
+                console.log('✅ Login successful:', user.name);
+                
+                DataHandler.setCurrentUser(user);
+                redirectUser(user.type);
+                
+            } catch (error) {
+                console.error('❌ Login error:', error);
+                showError(error.message);
+                
+                // Show additional help for common issues
+                if (error.message.includes('not found')) {
+                    console.log('💡 Available users:', DataHandler.getUsers().map(u => `${u.name} (${u.type})`));
+                }
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        function showSignupInfo() {
+            alert('For new accounts, please contact the administration office.\n\nPhone: 06182-123456\nEmail: admin@maharajacollege.ac.in');
+        }
+
+        // Prefill demo credentials for testing
+        function prefillDemoCredentials() {
+            // Auto-fill based on selected user type
+            document.getElementById('userType').addEventListener('change', function() {
+                const type = this.value;
+                switch(type) {
+                    case 'student':
+                        document.getElementById('email').value = 'Rahul Sharma';
+                        document.getElementById('password').value = '20020515';
+                        break;
+                    case 'teacher':
+                        document.getElementById('email').value = 'Dr. Sunita Verma';
+                        document.getElementById('password').value = '19750815';
+                        break;
+                    case 'admin':
+                        document.getElementById('email').value = 'Admin User';
+                        document.getElementById('password').value = '123456';
+                        break;
+                }
+            });
+            
+            // Trigger change to prefill initially
+            document.getElementById('userType').dispatchEvent(new Event('change'));
+        }
+
+        // Test function to verify users exist
+        function verifyUsers() {
+            const users = DataHandler.getUsers();
+            console.log('👥 VERIFYING USERS:');
+            users.forEach(user => {
+                console.log(`- ${user.name} (${user.type}) - DOB: ${user.dob || 'N/A'}`);
+            });
+            
+            const studentUsers = users.filter(u => u.type === 'student');
+            const teacherUsers = users.filter(u => u.type === 'teacher');
+            const adminUsers = users.filter(u => u.type === 'admin');
+            
+            console.log(`📊 Count - Students: ${studentUsers.length}, Teachers: ${teacherUsers.length}, Admins: ${adminUsers.length}`);
+            
+            const result = {
+                students: studentUsers.map(u => u.name),
+                teachers: teacherUsers.map(u => u.name),
+                admins: adminUsers.map(u => u.name)
+            };
+            
+            alert(`Users Verified!\n\nStudents: ${result.students.join(', ')}\nTeachers: ${result.teachers.join(', ')}\nAdmins: ${result.admins.join(', ')}`);
+            
+            return result;
+        }
+
+        // Test login function
+        function testLogin() {
+            const testCases = [
+                { name: 'Demo Student', type: 'student', password: '123456' },
+                { name: 'Anurag Singh', type: 'student', password: '123456' },
+                { name: 'Rahul Sharma', type: 'student', password: '20020515' },
+                { name: 'Dr. Sunita Verma', type: 'teacher', password: '19750815' },
+                { name: 'Admin User', type: 'admin', password: '123456' }
+            ];
+            
+            let results = [];
+            
+            testCases.forEach(testCase => {
+                console.log(`🧪 Testing: ${testCase.name} (${testCase.type})`);
+                try {
+                    const user = Auth.login(testCase.name, testCase.password, testCase.type);
+                    results.push(`✅ ${testCase.name}: SUCCESS`);
+                    console.log(`✅ SUCCESS: ${user.name}`);
+                } catch (error) {
+                    results.push(`❌ ${testCase.name}: ${error.message}`);
+                    console.log(`❌ FAILED: ${error.message}`);
+                }
+            });
+            
+            alert('Login Test Results:\n\n' + results.join('\n'));
+        }
+
+        // Reset data function
+        function resetData() {
+            if (confirm('Are you sure you want to reset all data? This will recreate demo users.')) {
+                localStorage.clear();
+                DataHandler.init();
+                ensureDemoUsers();
+                alert('Data reset complete! Page will reload.');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }
+        }
+
+        // Hidden Admin System
+        let adminClickCount = 0;
+        function initHiddenAdmin() {
+            const collegeHeader = document.querySelector('.college-branding h1');
+            if (collegeHeader) {
+                collegeHeader.style.cursor = 'pointer';
+                collegeHeader.title = 'Click multiple times for admin access';
+                
+                collegeHeader.addEventListener('click', function(e) {
+                    adminClickCount++;
+                    console.log('Admin click count:', adminClickCount);
+                    
+                    // Visual feedback
+                    this.style.transform = 'scale(1.05)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 200);
+                    
+                    if (adminClickCount === 4) {
+                        this.style.color = '#3498db';
+                        setTimeout(() => this.style.color = '', 1000);
+                    }
+                    
+                    if (adminClickCount === 8) {
+                        this.style.color = '#e74c3c';
+                        const proceed = confirm('🎯 Admin Access Detected!\n\nLogin as Administrator?');
+                        if (proceed) {
+                            const adminUser = {
+                                id: '3',
+                                name: 'Admin User',
+                                email: 'admin@maharajacollege.ac.in',
+                                type: 'admin'
+                            };
+                            DataHandler.setCurrentUser(adminUser);
+                            window.location.href = 'admin.html';
+                        }
+                        adminClickCount = 0;
+                        this.style.color = '';
+                    }
+                    
+                    // Reset count after 3 seconds
+                    setTimeout(() => {
+                        adminClickCount = 0;
+                        this.style.color = '';
+                    }, 3000);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
